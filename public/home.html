@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <link
+      href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: #121212;
+        color: #ffffff;
+        min-height: 100vh;
+      }
+      .card {
+        background-color: #1e1e1e;
+        border: none;
+      }
+      .form-control {
+        background-color: #2c2c2c;
+        color: #ffffff;
+        border: 1px solid #444;
+      }
+      .form-control::placeholder {
+        color: #bbb;
+      }
+      .form-control:focus {
+        background-color: #2c2c2c;
+        color: #ffffff;
+        border-color: #3f51b5;
+        box-shadow: 0 0 0 0.2rem rgba(63, 81, 181, 0.25);
+      }
+      .btn-primary {
+        background-color: #3f51b5;
+        border-color: #3f51b5;
+      }
+      .btn-primary:hover {
+        background-color: #303f9f;
+        border-color: #303f9f;
+      }
+      .btn-outline-danger {
+        color: #f08080;
+        border-color: #f08080;
+      }
+      .btn-outline-danger:hover {
+        color: #ffffff;
+        background-color: #dc3545;
+        border-color: #dc3545;
+      }
+      a {
+        color: #90caf9;
+      }
+      .alert-success {
+        background-color: #1e4620;
+        border-color: #2a602c;
+        color: #d1e7dd;
+      }
+      .alert-danger {
+        background-color: #5a1a1a;
+        border-color: #842029;
+        color: #f8d7da;
+      }
+      .navbar {
+        background-color: #1e1e1e !important;
+      }
+      hr {
+        border-color: #444;
+      }
+      .list-group-item {
+        background-color: #2c2c2c;
+        border-color: #444;
+        color: #ffffff;
+      }
+      .summary-label {
+        color: #bbb;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
+      <div class="container">
+        <a class="navbar-brand" href="/home.html" style="font-weight: bold; font-size: 1.5rem;">TicketBoss</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+              <span class="navbar-text mr-3" id="welcome-message">Welcome!</span>
+            </li>
+            <li class="nav-item">
+              <button class="btn btn-outline-danger btn-sm" id="logout-button">Logout</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container mt-5">
+      <div class="row">
+        <div class="col-lg-7 mb-4">
+            <div class="card mb-4 shadow-lg">
+                <div class="card-body">
+                    <h3 class="card-title" id="event-name">Loading Event...</h3>
+                    <p class="card-subtitle mb-2 summary-label" id="event-id">...</p>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col">
+                            <h5 class="summary-label">Available Seats</h5>
+                            <h2 id="available-seats" class="font-weight-bold" style="color: #4CAF50;">...</h2>
+                        </div>
+                        <div class="col">
+                            <h5 class="summary-label">Total Seats</h5>
+                            <h4 id="total-seats" class="text-white">...</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card shadow-lg">
+                <div class="card-body">
+                    <h3 class="card-title">Book Tickets</h3>
+                    <hr>
+                    <form id="book-ticket-form">
+                        <div class="form-group">
+                            <label for="seats-to-book" class="summary-label">Seats (1-10)</label>
+                            <input type="number" class="form-control" id="seats-to-book" min="1" max="10" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Book Now</button>
+                    </form>
+                    <div id="booking-message" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card shadow-lg">
+                <div class="card-body">
+                    <h3 class="card-title">My Reservations</h3>
+                    <hr>
+                    <ul class="list-group" id="my-reservations-list">
+                        <li class="list-group-item text-center summary-label" id="reservations-loading">Loading...</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    
+    <script>
+      function getAuthToken() {
+        return localStorage.getItem('authToken');
+      }
+
+      function getAuthHeaders() {
+        const token = getAuthToken();
+        return {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        };
+      }
+      
+      function getUsernameFromToken(token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          return payload.username;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      async function fetchEventSummary() {
+        try {
+          const response = await fetch('/reservations');
+          if (!response.ok) throw new Error('Failed to load summary');
+          const data = await response.json();
+          document.getElementById('event-name').textContent = data.name;
+          document.getElementById('event-id').textContent = `ID: ${data.eventId}`;
+          document.getElementById('available-seats').textContent = data.availableSeats;
+          document.getElementById('total-seats').textContent = data.totalSeats;
+        } catch (error) {
+          console.error('Error fetching summary:', error);
+          document.getElementById('event-name').textContent = "Failed to load event";
+        }
+      }
+
+      async function fetchMyReservations() {
+        const list = document.getElementById('my-reservations-list');
+        try {
+          const response = await fetch('/my-reservations', {
+            headers: getAuthHeaders()
+          });
+          if (response.status === 401 || response.status === 403) {
+             window.location.href = '/login.html';
+             return;
+          }
+          if (!response.ok) throw new Error('Failed to load reservations');
+          const data = await response.json();
+          list.innerHTML = '';
+          if (data.length === 0) {
+            list.innerHTML = '<li class="list-group-item text-center summary-label">You have no reservations.</li>';
+            return;
+          }
+          data.forEach(res => {
+            const item = document.createElement('li');
+            item.className = 'list-group-item d-flex justify-content-between align-items-center';
+            item.innerHTML = `
+                <span>
+                    <strong>${res.seats} seats</strong>
+                    <small class="d-block summary-label">${res.reservationId}</small>
+                </span>
+                <button class="btn btn-sm btn-outline-danger" data-id="${res.reservationId}">Cancel</button>
+            `;
+            list.appendChild(item);
+          });
+        } catch (error) {
+          console.error('Error fetching reservations:', error);
+          list.innerHTML = '<li class="list-group-item text-danger">Failed to load reservations.</li>';
+        }
+      }
+
+      document.getElementById('book-ticket-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const seats = document.getElementById('seats-to-book').value;
+        const messageEl = document.getElementById('booking-message');
+        try {
+          const response = await fetch('/reservations', {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ seats: parseInt(seats) })
+          });
+          const data = await response.json();
+          if (response.status === 201) {
+            messageEl.innerHTML = `<div class="alert alert-success">Successfully booked ${data.seats} seats.</div>`;
+            fetchEventSummary();
+            fetchMyReservations();
+            document.getElementById('seats-to-book').value = '';
+          } else if (response.status === 409) {
+            messageEl.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+          } else if (response.status === 400) {
+            messageEl.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+          } else {
+            messageEl.innerHTML = `<div class="alert alert-danger">${data.error || 'An unknown error occurred.'}</div>`;
+          }
+        } catch (error) {
+          console.error('Booking error:', error);
+          messageEl.innerHTML = `<div class="alert alert-danger">Booking failed. Please try again.</div>`;
+        }
+      });
+
+      document.getElementById('my-reservations-list').addEventListener('click', async function(e) {
+        if (e.target.classList.contains('btn-outline-danger')) {
+          const reservationId = e.target.getAttribute('data-id');
+          if (!confirm('Are you sure you want to cancel this reservation?')) {
+            return;
+          }
+          try {
+            const response = await fetch(`/reservations/${reservationId}`, {
+              method: 'DELETE',
+              headers: getAuthHeaders()
+            });
+            if (response.status === 204) {
+              fetchEventSummary();
+              fetchMyReservations();
+            } else {
+              alert('Failed to cancel reservation.');
+            }
+          } catch (error) {
+            console.error('Cancel error:', error);
+            alert('An error occurred. Please try again.');
+          }
+        }
+      });
+
+      document.getElementById('logout-button').addEventListener('click', () => {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login.html';
+      });
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const token = getAuthToken();
+        if (!token) {
+          window.location.href = '/login.html';
+        } else {
+          const username = getUsernameFromToken(token);
+          if (username) {
+            document.getElementById('welcome-message').textContent = `Welcome, ${username}!`;
+          }
+          fetchEventSummary();
+          fetchMyReservations();
+        }
+      });
+    </script>
+  </body>
+</html>
