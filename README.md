@@ -96,7 +96,7 @@ Atomic Success Test: Verifies two concurrent valid bookings (4 and 6 seats) both
 
 Oversell Prevention Test: Verifies that when capacity is exceeded (10 seats requested, 8 available), only one transaction succeeds, and the other is correctly rejected with a 409 Conflict.
 
-Run tests using:
+Run tests using the below command when the server is Running (Use Another Terminal):
 
 ```bash
 npm test
