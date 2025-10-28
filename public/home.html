@@ -144,7 +144,7 @@
       </div>
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     
@@ -210,7 +210,7 @@
                     <strong>${res.seats} seats</strong>
                     <small class="d-block summary-label">${res.reservationId}</small>
                 </span>
-                <button class="btn btn-sm btn-outline-danger" data-id="${res.reservationId}">Cancel</button>
+                <button class="btn btn-sm btn-outline-danger" data-id="${res.reservationId}" data-seats="${res.seats}">Cancel</button>
             `;
             list.appendChild(item);
           });
@@ -232,7 +232,8 @@
           });
           const data = await response.json();
           if (response.status === 201) {
-            messageEl.innerHTML = `<div class="alert alert-success">Successfully booked ${data.seats} seats.</div>`;
+            
+            messageEl.innerHTML = `<div class="alert alert-success">Successfully Booked ${data.seats} seats.</div>`;
             fetchEventSummary();
             fetchMyReservations();
             document.getElementById('seats-to-book').value = '';
@@ -251,8 +252,12 @@
 
       document.getElementById('my-reservations-list').addEventListener('click', async function(e) {
         if (e.target.classList.contains('btn-outline-danger')) {
+
           const reservationId = e.target.getAttribute('data-id');
-          if (!confirm('Are you sure you want to cancel this reservation?')) {
+          const seatsToCancel = e.target.getAttribute('data-seats');
+          const messageEl = document.getElementById('booking-message');
+
+          if (!confirm(`Are you sure you want to cancel your ${seatsToCancel} seat reservation?`)) {
             return;
           }
           try {
@@ -261,14 +266,15 @@
               headers: getAuthHeaders()
             });
             if (response.status === 204) {
+              messageEl.innerHTML = `<div class="alert alert-success">Successfully Cancelled ${seatsToCancel} seats.</div>`;
               fetchEventSummary();
               fetchMyReservations();
             } else {
-              alert('Failed to cancel reservation.');
+              messageEl.innerHTML = `<div class="alert alert-danger">Failed to cancel reservation. It may already be cancelled or not found.</div>`;
             }
           } catch (error) {
             console.error('Cancel error:', error);
-            alert('An error occurred. Please try again.');
+            messageEl.innerHTML = `<div class="alert alert-danger">An error occurred during cancellation.</div>`;
           }
         }
       });

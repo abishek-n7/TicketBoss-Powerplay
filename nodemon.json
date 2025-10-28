@@ -1,0 +1,6 @@
+{
+  "ignore": [
+    "ticketboss.db"
+  ],
+  "ext": "js,html,css"
+}
